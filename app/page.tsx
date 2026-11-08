@@ -2,6 +2,7 @@
 
 import { ChangeEvent, FunctionComponent, useState } from "react";
 
+import { interpret } from "../lib/interpret";
 import styles from "./page.module.css";
 
 interface DSLExample {
@@ -67,7 +68,23 @@ const examples: readonly DSLExample[] = [
 
 const Home: FunctionComponent = () => {
   const [expression, setExpression] = useState<string>(examples[0].dsl);
+  const [output, setOutput] = useState<string>("");
+  const [success, setSuccess] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
   const setDsl = (dsl: string) => () => setExpression(dsl);
+
+  const runQuery = () => {
+    try {
+      const result = interpret(expression);
+      setOutput(String(Math.floor(result)));
+      setSuccess(true);
+    } catch (error) {
+      setSuccess(false);
+      setErrorMessage("There is a problem with your DSL query.");
+      void error;
+    }
+  };
 
   return (
     <main className={styles.container}>
@@ -116,13 +133,23 @@ const Home: FunctionComponent = () => {
           }
           rows={8}
         ></textarea>
-        <div className={[styles.message, styles.messageSuccess].join(" ")}>
-          DSL query ran successfully!
-        </div>
-        <div className={[styles.message, styles.messageError].join(" ")}>
-          There is a problem with your DSL query.
-        </div>
-        <button data-testid="run-button" type="button">
+        {success && (
+          <div
+            className={[styles.message, styles.messageSuccess].join(" ")}
+            data-testid="success-message"
+          >
+            DSL query ran successfully!
+          </div>
+        )}
+        {errorMessage && (
+          <div
+            className={[styles.message, styles.messageError].join(" ")}
+            data-testid="error-message"
+          >
+            {errorMessage}
+          </div>
+        )}
+        <button data-testid="run-button" type="button" onClick={runQuery}>
           Run
         </button>
       </div>
@@ -133,8 +160,10 @@ const Home: FunctionComponent = () => {
         <textarea
           id="dsl-output"
           className={styles.field}
+          data-testid="dsl-output"
           readOnly
           rows={1}
+          value={output}
         ></textarea>
       </div>
     </main>
