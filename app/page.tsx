@@ -77,12 +77,17 @@ const Home: FunctionComponent = () => {
   const runQuery = () => {
     try {
       const result = interpret(expression);
-      setOutput(String(Math.floor(result)));
+      setOutput(String(result));
       setSuccess(true);
+      setErrorMessage(null);
     } catch (error) {
       setSuccess(false);
-      setErrorMessage("There is a problem with your DSL query.");
-      void error;
+      setOutput("");
+      setErrorMessage(
+        error instanceof Error
+          ? error.message
+          : "There is a problem with your DSL query.",
+      );
     }
   };
 
