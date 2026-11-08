@@ -38,3 +38,14 @@
   --message-background: var(--color-success);
   --message-color: #fff;
 }
+
+.messageLoading {
+  --message-background: var(--color-brand-primary);
+  --message-color: #fff;
+}
+
+.field:disabled,
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

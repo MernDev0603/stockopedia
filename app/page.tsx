@@ -66,29 +66,49 @@ const examples: readonly DSLExample[] = [
   },
 ];
 
+const EVALUATION_YIELD_MS = 0;
+
 const Home: FunctionComponent = () => {
   const [expression, setExpression] = useState<string>(examples[0].dsl);
   const [output, setOutput] = useState<string>("");
   const [success, setSuccess] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const setDsl = (dsl: string) => () => setExpression(dsl);
+  const setDsl = (dsl: string) => () => {
+    if (isLoading) {
+      return;
+    }
+    setExpression(dsl);
+  };
 
   const runQuery = () => {
-    try {
-      const result = interpret(expression);
-      setOutput(String(result));
-      setSuccess(true);
-      setErrorMessage(null);
-    } catch (error) {
-      setSuccess(false);
-      setOutput("");
-      setErrorMessage(
-        error instanceof Error
-          ? error.message
-          : "There is a problem with your DSL query.",
-      );
+    if (isLoading) {
+      return;
     }
+
+    setIsLoading(true);
+    setSuccess(false);
+    setErrorMessage(null);
+
+    window.setTimeout(() => {
+      try {
+        const result = interpret(expression);
+        setOutput(String(result));
+        setSuccess(true);
+        setErrorMessage(null);
+      } catch (error) {
+        setSuccess(false);
+        setOutput("");
+        setErrorMessage(
+          error instanceof Error
+            ? error.message
+            : "There is a problem with your DSL query.",
+        );
+      } finally {
+        setIsLoading(false);
+      }
+    }, EVALUATION_YIELD_MS);
   };
 
   return (
@@ -117,6 +137,7 @@ const Home: FunctionComponent = () => {
               onClick={setDsl(dsl)}
               key={id}
               data-testid={`button-${id}`}
+              disabled={isLoading}
             >
               {label}
             </button>
@@ -133,12 +154,23 @@ const Home: FunctionComponent = () => {
           data-testid="expression-input"
           placeholder="Enter your DSL"
           value={expression}
+          disabled={isLoading}
           onChange={(e: ChangeEvent<HTMLTextAreaElement>) =>
             setExpression(e.target.value)
           }
           rows={8}
         ></textarea>
-        {success && (
+        {isLoading && (
+          <div
+            className={[styles.message, styles.messageLoading].join(" ")}
+            data-testid="loading-message"
+            role="status"
+            aria-live="polite"
+          >
+            Evaluating…
+          </div>
+        )}
+        {!isLoading && success && (
           <div
             className={[styles.message, styles.messageSuccess].join(" ")}
             data-testid="success-message"
@@ -146,7 +178,7 @@ const Home: FunctionComponent = () => {
             DSL query ran successfully!
           </div>
         )}
-        {errorMessage && (
+        {!isLoading && errorMessage && (
           <div
             className={[styles.message, styles.messageError].join(" ")}
             data-testid="error-message"
@@ -154,8 +186,13 @@ const Home: FunctionComponent = () => {
             {errorMessage}
           </div>
         )}
-        <button data-testid="run-button" type="button" onClick={runQuery}>
-          Run
+        <button
+          data-testid="run-button"
+          type="button"
+          onClick={runQuery}
+          disabled={isLoading}
+        >
+          {isLoading ? "Running…" : "Run"}
         </button>
       </div>
 
